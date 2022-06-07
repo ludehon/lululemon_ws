@@ -7,7 +7,7 @@ url = "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hom
 html_content = requests.get(url).text
 soup = BeautifulSoup(html_content, 'html.parser')
 items = soup.find_all('div', class_="col-6 col-md-4")
-print(f"found {len(items)} items")
+print(f"{len(items)} products currently in WMTM")
 current_items = set([' '.join(item.find("img")["alt"].replace('"', 'inch').split()) for item in items])
 
 
@@ -25,12 +25,11 @@ old_items = set(dic.keys())
 
 new_items = current_items.difference(old_items)
 if (len(new_items) > 0):
-    print(f"new items are: {new_items}")
-
-
-current_state = {}
-for i in current_items:
-    current_state[i] = "value"
-
-with open('items.json', 'w', encoding='utf-8') as f:
-    json.dump(current_state, f, ensure_ascii=False, indent=4)
+    print(f"new products are: {new_items}")
+    current_state = {}
+    for i in current_items:
+        current_state[i] = "value"
+    with open('items.json', 'w', encoding='utf-8') as f:
+        json.dump(current_state, f, ensure_ascii=False, indent=4)
+else:
+    print("no new items")

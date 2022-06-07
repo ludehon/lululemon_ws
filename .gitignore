@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 items.json
+credentials.json
