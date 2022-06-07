@@ -1,35 +1,76 @@
 from bs4 import BeautifulSoup
 import requests, os, json
 from os.path import exists
+from TwitterClient import TwitterClient
 
 
-url = "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hommes?sz=150"
-html_content = requests.get(url).text
-soup = BeautifulSoup(html_content, 'html.parser')
-items = soup.find_all('div', class_="col-6 col-md-4")
-print(f"{len(items)} products currently in WMTM")
-current_items = set([' '.join(item.find("img")["alt"].replace('"', 'inch').split()) for item in items])
+new_line = '\n'
+tweet_limit = 250
+endpoints = {
+    "fr": {
+        "male": "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hommes?sz=300",
+        "female": "https://www.lululemon.fr/fr-fr/c/femmes/collections/on-en-a-trop?sz=300"
+    }
+}
 
 
-# current_items = set(["item3"])
+class WMTM:
+    def __init__(self, country):
+        self.country = country
+        self.endpoint = endpoints[country]
 
-if (not exists("items.json")):
-    os.system('echo {"item1": "value"} > items.json')
+    def getItems(self, gender):
+        fileName = f'items_{self.country}_{gender}.json'
+        html_content = requests.get(self.endpoint[gender]).text
+        soup = BeautifulSoup(html_content, 'html.parser')
+        items = soup.find_all('div', class_="col-6 col-md-4")
+        print(f"{len(items)} products currently in WMTM")
+        current_items = set([' '.join(item.find("img")["alt"].replace('"', 'inch').split()) for item in items])  # remove non breaking space
 
-f = open('items.json', 'r',  encoding='utf-8')
-dic = json.loads(f.read())
-f.close()
+        if (not exists(fileName)):
+            os.system('echo {} > ' + fileName)
+        f = open(fileName, 'r',  encoding='utf-8')
+        dic = json.loads(f.read())
+        f.close()
 
-old_items = set(dic.keys())
-# print(f"old items are: {old_items}")
+        old_items = set(dic.keys())
+        new_items = current_items.difference(old_items)
+        return new_items, current_items
 
-new_items = current_items.difference(old_items)
-if (len(new_items) > 0):
-    print(f"new products are: {new_items}")
-    current_state = {}
-    for i in current_items:
-        current_state[i] = "value"
-    with open('items.json', 'w', encoding='utf-8') as f:
-        json.dump(current_state, f, ensure_ascii=False, indent=4)
-else:
-    print("no new items")
+    def formatMessages(self, new_items, gender):
+        header = f"Nouveau produits {'hommes' if gender=='male' else 'femmes'}:{new_line}"
+        splitted_message = []
+        message = ""
+        for i, item in enumerate(new_items):
+            if (len(message + f'{new_line}{item}'))>tweet_limit:
+                splitted_message.append(f"{message}{new_line}{i}")
+                message = ""
+            message += f'{new_line}{item}'
+        splitted_message[0] = header + splitted_message[0]
+        return splitted_message
+
+    def tweetNewProducts(self, gender):
+        new_items, current_items = self.getItems(gender)
+        if (len(new_items) > 0):
+            # save current items
+            current_state = {}
+            for i in current_items:
+                current_state[i] = "value"
+            with open(f'items_{self.country}_{gender}.json', 'w', encoding='utf-8') as f:
+                json.dump(current_state, f, ensure_ascii=False, indent=4)
+
+            # send tweets
+            messages = self.formatMessages(new_items, gender)
+            tc = TwitterClient("credentials.json")
+            for message in messages:
+                print(f'{self.country}_{gender}')
+                print(message)
+                tc.tweet(message)
+        else:
+            print("no new items")
+            
+
+if __name__=="__main__":
+    wmtm = WMTM("fr")
+    wmtm.tweetNewProducts("male")
+    wmtm.tweetNewProducts("female")
