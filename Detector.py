@@ -8,7 +8,7 @@ new_line = '\n'
 tweet_limit = 250
 endpoints = {
     "fr": {
-        "male": "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hommes?sz=300",
+        "male": "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hommes?sz=1",
         "female": "https://www.lululemon.fr/fr-fr/c/femmes/collections/on-en-a-trop?sz=300"
     }
 }
@@ -25,7 +25,12 @@ class WMTM:
         soup = BeautifulSoup(html_content, 'html.parser')
         items = soup.find_all('div', class_="col-6 col-md-4")
         print(f"{len(items)} products currently in WMTM")
-        current_items = set([' '.join(item.find("img")["alt"].replace('"', 'inch').split()) for item in items])  # remove non breaking space
+        current_items = []
+        for item in items:
+            itemName = ' '.join(item.find("img")["alt"].replace('"', 'inch').split()) # remove non breaking space
+            sizes = self.getSizes(item)
+            current_items.append(f"{itemName}{sizes}")
+        current_items = set(current_items)
 
         if (not exists(fileName)):
             os.system('echo {} > ' + fileName)
@@ -68,9 +73,18 @@ class WMTM:
                 tc.tweet(message)
         else:
             print("no new items")
+
+    def getSizes(self, item):
+        return ""
+        # print(item)
+        # # get url
+        # item_html = requests.get(itemURL).text
+        # soup = BeautifulSoup(item_html, 'html.parser')
+        # pass
             
 
 if __name__=="__main__":
+    os.remove("items_fr_male.json")
     wmtm = WMTM("fr")
     wmtm.tweetNewProducts("male")
-    wmtm.tweetNewProducts("female")
+    # wmtm.tweetNewProducts("female")
