@@ -56,8 +56,8 @@ class WMTM:
             if (len(message + f'{new_line}{item}'))>tweet_limit:
                 splitted_message.append(f"{message}{new_line}{j}")
                 message = ""
+                j+=1
             message += f'{new_line}{item}'
-            j+=1
         splitted_message.append(f"{message}{new_line}")
         splitted_message[0] = header + splitted_message[0]
         return splitted_message
