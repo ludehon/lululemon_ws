@@ -86,7 +86,6 @@ class WMTM:
         return ','.join(sizes)
 
 if __name__=="__main__":
-    os.remove("items_fr_male.json")
     wmtm = WMTM("fr")
     wmtm.tweetNewProducts("male")
     wmtm.tweetNewProducts("female")
