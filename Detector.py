@@ -83,7 +83,10 @@ class WMTM:
         itemContent = requests.get(itemURL).text
         itemRoot = lxml.html.fromstring(itemContent)
         sizes = itemRoot.xpath("//div[@data-attr='size']//div[@class='custom-select-btn ']/span[input[not(@disabled)]]/label/text()")
-        return ','.join(sizes)
+        if (sizes[0] == "ONE SIZE"):
+            return ""
+        else:
+            return ','.join(sizes)
 
 if __name__=="__main__":
     wmtm = WMTM("fr")
