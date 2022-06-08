@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests, os, json
 from os.path import exists
 from TwitterClient import TwitterClient
+import lxml.html
 
 
 new_line = '\n'
@@ -25,7 +26,12 @@ class WMTM:
         soup = BeautifulSoup(html_content, 'html.parser')
         items = soup.find_all('div', class_="col-6 col-md-4")
         print(f"{len(items)} products currently in WMTM")
-        current_items = set([' '.join(item.find("img")["alt"].replace('"', 'inch').split()) for item in items])  # remove non breaking space
+        current_items = []
+        for item in items:
+            itemName = ' '.join(item.find("img")["alt"].replace('"', 'inch').split()) # remove non breaking space
+            sizes = self.getSizes(item)
+            current_items.append(f"{itemName} ({sizes})")
+        current_items = set(current_items)
 
         if (not exists(fileName)):
             os.system('echo {} > ' + fileName)
@@ -46,6 +52,7 @@ class WMTM:
                 splitted_message.append(f"{message}{new_line}{i}")
                 message = ""
             message += f'{new_line}{item}'
+        splitted_message.append(f"{message}{new_line}")
         splitted_message[0] = header + splitted_message[0]
         return splitted_message
 
@@ -68,7 +75,15 @@ class WMTM:
                 tc.tweet(message)
         else:
             print("no new items")
-            
+
+    def getSizes(self, item):
+        itemStr = str(item)
+        itemRoot = lxml.html.fromstring(itemStr)
+        itemURL = itemRoot.xpath("//div[@class='image-container']/a[@data-lulu-attributes]/@href")[0]
+        itemContent = requests.get(itemURL).text
+        itemRoot = lxml.html.fromstring(itemContent)
+        sizes = itemRoot.xpath("//div[@data-attr='size']//div[@class='custom-select-btn ']/span[input[not(@disabled)]]/label/text()")
+        return ','.join(sizes)
 
 if __name__=="__main__":
     wmtm = WMTM("fr")
