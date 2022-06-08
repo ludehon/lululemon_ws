@@ -2,13 +2,14 @@ from bs4 import BeautifulSoup
 import requests, os, json
 from os.path import exists
 from TwitterClient import TwitterClient
+import lxml.html
 
 
 new_line = '\n'
 tweet_limit = 250
 endpoints = {
     "fr": {
-        "male": "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hommes?sz=1",
+        "male": "https://www.lululemon.fr/fr-fr/c/hommes/collections/on-en-a-trop-pour-hommes?sz=300",
         "female": "https://www.lululemon.fr/fr-fr/c/femmes/collections/on-en-a-trop?sz=300"
     }
 }
@@ -29,7 +30,7 @@ class WMTM:
         for item in items:
             itemName = ' '.join(item.find("img")["alt"].replace('"', 'inch').split()) # remove non breaking space
             sizes = self.getSizes(item)
-            current_items.append(f"{itemName}{sizes}")
+            current_items.append(f"{itemName} ({sizes})")
         current_items = set(current_items)
 
         if (not exists(fileName)):
@@ -43,6 +44,7 @@ class WMTM:
         return new_items, current_items
 
     def formatMessages(self, new_items, gender):
+        print(f'len new items : {len(new_items)}')
         header = f"Nouveau produits {'hommes' if gender=='male' else 'femmes'}:{new_line}"
         splitted_message = []
         message = ""
@@ -51,6 +53,7 @@ class WMTM:
                 splitted_message.append(f"{message}{new_line}{i}")
                 message = ""
             message += f'{new_line}{item}'
+        splitted_message.append(f"{message}{new_line}")
         splitted_message[0] = header + splitted_message[0]
         return splitted_message
 
@@ -75,16 +78,16 @@ class WMTM:
             print("no new items")
 
     def getSizes(self, item):
-        return ""
-        # print(item)
-        # # get url
-        # item_html = requests.get(itemURL).text
-        # soup = BeautifulSoup(item_html, 'html.parser')
-        # pass
-            
+        itemStr = str(item)
+        itemRoot = lxml.html.fromstring(itemStr)
+        itemURL = itemRoot.xpath("//div[@class='image-container']/a[@data-lulu-attributes]/@href")[0]
+        itemContent = requests.get(itemURL).text
+        itemRoot = lxml.html.fromstring(itemContent)
+        sizes = itemRoot.xpath("//div[@data-attr='size']//div[@class='custom-select-btn ']/span[input[not(@disabled)]]/label/text()")
+        return ','.join(sizes)
 
 if __name__=="__main__":
     os.remove("items_fr_male.json")
     wmtm = WMTM("fr")
     wmtm.tweetNewProducts("male")
-    # wmtm.tweetNewProducts("female")
+    wmtm.tweetNewProducts("female")
