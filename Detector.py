@@ -44,7 +44,6 @@ class WMTM:
         return new_items, current_items
 
     def formatMessages(self, new_items, gender):
-        print(f'len new items : {len(new_items)}')
         header = f"Nouveau produits {'hommes' if gender=='male' else 'femmes'}:{new_line}"
         splitted_message = []
         message = ""
